@@ -51,10 +51,10 @@ This page is reading telescope files.  Please be patient.
 
 # :::: panel
 # --outlinebox p
-F770W [](:XuseF770W) [](:-color1/0/5/0.1)[show settings](:=filter0=true)
-F1000W [](:XuseF1000W) [](:-color2/0/5/0.1)[show settings](:=filter1=true)
-F1130W [](:XuseF1130W) [](:-color3/0/5/0.1)[show settings](:=filter2=true)
-F2100W [](:XuseF2100W) [](:-color4/0/5/0.1)[show settings](:=filter3=true)
+F770W [](:XuseF770W) [](:-color0/0/5/0.1)[show settings](:=editFilter=0)
+F1000W [](:XuseF1000W) [](:-color1/0/5/0.1)[show settings](:=editFilter=1)
+F1130W [](:XuseF1130W) [](:-color2/0/5/0.1)[show settings](:=editFilter=2)
+F2100W [](:XuseF2100W) [](:-color3/0/5/0.1)[show settings](:=editFilter=3)
 
 ---
 
@@ -176,13 +176,18 @@ const otherImage = {
   min: [1.0, 1.0, 1.0, 1.0],
   max: [100.0, 100.0, 225.0, 225.0],
 };
+const horseheadImage = {
+  min: [7000, 1.0, 1.0, 1.0],
+  max: [12000.0, 100.0, 225.0, 225.0],
+};
 
 const images = [
   m53Image,
   otherImage,
+  horseheadImage,
 ];
 let imageIndex = 0;
-let useFITS = false;
+let useFITS = true;
 
 let dataNames = ['f770w', 'f1000w', 'f1130w', 'f2100w'];
 
@@ -196,20 +201,18 @@ let dataArrays = [];
 smartdown.showDisclosure('panel','','transparent,bottomright,draggable,shadow,outline');
 // smartdown.showDisclosure('intro','','transparent,topleft,closeable,draggable,shadow,outline');
 smartdown.setVariable('useF770W', true);
-smartdown.setVariable('useF1000W', true);
+smartdown.setVariable('useF1000W', false);
 smartdown.setVariable('useF1130W', false);
 smartdown.setVariable('useF2100W', false);
-smartdown.setVariable('redraw',false);
-smartdown.setVariable('color1', 1);
-smartdown.setVariable('color2', 3);
-smartdown.setVariable('color3', 5);
-smartdown.setVariable('color4', 0);
+smartdown.setVariable('color0', 1);
+smartdown.setVariable('color1', 3);
+smartdown.setVariable('color2', 5);
+smartdown.setVariable('color2', 0);
 smartdown.setVariable('setFilter', dataNames[activeFilter]);
 smartdown.setVariable('curveFunction', stretchFunction[activeFilter]);
 smartdown.setVariable('min', images[imageIndex].min[activeFilter]);
 smartdown.setVariable('max', images[imageIndex].max[activeFilter]);
 smartdown.setVariable('saveSettings', false);
-smartdown.setVariable('drawHistogram', false);
 smartdown.setVariable('filter0', 'false');
 smartdown.setVariable('filter1', 'false');
 smartdown.setVariable('filter2', 'false');
@@ -288,16 +291,19 @@ async function getImageData(filenameBase) {
 smartdown.showDisclosure('loading','','center,lightbox');
 
 if (imageIndex === 0) {
-  dataArrays.push(await getImageData('assets/data/jw02107-o039_t018_miri_f770w_i2d'));
-  dataArrays.push(await getImageData('assets/data/jw02107-o039_t018_miri_f1000w_i2d'));
-  dataArrays.push(await getImageData('assets/data/jw02107-o039_t018_miri_f1130w_i2d'));
-  dataArrays.push(await getImageData('assets/data/jw02107-o039_t018_miri_f2100w_i2d'));
+  dataArrays.push(await getImageData('assets/data/jw02107-o039_t018_miri_f770w_i2d_HDU1'));
+  dataArrays.push(await getImageData('assets/data/jw02107-o039_t018_miri_f1000w_i2d_HDU1'));
+  dataArrays.push(await getImageData('assets/data/jw02107-o039_t018_miri_f1130w_i2d_HDU1'));
+  dataArrays.push(await getImageData('assets/data/jw02107-o039_t018_miri_f2100w_i2d_HDU1'));
 }
 if (imageIndex === 1) {
-  dataArrays.push(await getImageData('assets/data/jw02107-c1019_t018_miri_f1000w_i2d'));
-  dataArrays.push(await getImageData('assets/data/jw02107-c1019_t018_miri_f1130w_i2d'));
-  dataArrays.push(await getImageData('assets/data/jw02107-c1019_t018_miri_f2100w_i2d'));
-  dataArrays.push(await getImageData('assets/data/jw02107-c1019_t018_miri_f770w_i2d'));
+  dataArrays.push(await getImageData('assets/data/jw02107-c1019_t018_miri_f1000w_i2d_HDU1'));
+  dataArrays.push(await getImageData('assets/data/jw02107-c1019_t018_miri_f1130w_i2d_HDU1'));
+  dataArrays.push(await getImageData('assets/data/jw02107-c1019_t018_miri_f2100w_i2d_HDU1'));
+  dataArrays.push(await getImageData('assets/data/jw02107-c1019_t018_miri_f770w_i2d_HDU1'));
+}
+if (imageIndex === 2) {
+  dataArrays.push(await getImageData('assets/data/HorseHead_HDU0'));
 }
 
 smartdown.hideDisclosure('loading','','');
@@ -326,7 +332,7 @@ sizeCanvas();
 
 
 function drawHistogram() {
-  let div = document.getElementById('div_playable_2')
+  let div = window.histogramPlayableDiv;
   let data2d = dataArrays[activeFilter];
   let histData = [];
   let f = new Function('x', 'return ' + env.curveFunction + ';');
@@ -427,10 +433,10 @@ let yshift = 0; // 200; // 50;
 
 function draw() {
   let zoomOut = 2.0;
+  let f0color = spectrumProcess(env.color0)
   let f1color = spectrumProcess(env.color1)
   let f2color = spectrumProcess(env.color2)
   let f3color = spectrumProcess(env.color3)
-  let f4color = spectrumProcess(env.color4)
   let imagedata = context.createImageData(canvas.width, canvas.height);
 
   // Adjust xshift and yshift so that image is upper left of canvas
@@ -443,11 +449,11 @@ function draw() {
   let adjustedXShift = xGap > 0 ? (xshift - xGap) : -xGap;
   let adjustedYShift = yGap > 0 ? (yshift - yGap) : yshift;
 
-  console.log('nrows,ncols', nrows, ncols);
-  console.log('scaledY,scaledX', scaledY, scaledX);
-  console.log('canvas.height, canvas.width', canvas.height, canvas.width);
-  console.log('yGap,xGap', yGap, xGap);
-  console.log('adjustedYShift, adjustedXShift', adjustedYShift, adjustedXShift);
+  // console.log('nrows,ncols', nrows, ncols);
+  // console.log('scaledY,scaledX', scaledY, scaledX);
+  // console.log('canvas.height, canvas.width', canvas.height, canvas.width);
+  // console.log('yGap,xGap', yGap, xGap);
+  // console.log('adjustedYShift, adjustedXShift', adjustedYShift, adjustedXShift);
 
   for (let y=0; y<canvas.height; y++) {
     for (let x=0; x<canvas.width; x++) {
@@ -468,24 +474,24 @@ function draw() {
       }
       else if (ny < nrows && nx < ncols) {
         if (env.useF770W){
-          imagedata.data[pixelindex+0] += (getValue(dataArrays[0][ny][nx],0)*f1color[0]);
-          imagedata.data[pixelindex+1] += (getValue(dataArrays[0][ny][nx],0)*f1color[1]);
-          imagedata.data[pixelindex+2] += (getValue(dataArrays[0][ny][nx],0)*f1color[2]);
+          imagedata.data[pixelindex+0] += (getValue(dataArrays[0][ny][nx],0)*f0color[0]);
+          imagedata.data[pixelindex+1] += (getValue(dataArrays[0][ny][nx],0)*f0color[1]);
+          imagedata.data[pixelindex+2] += (getValue(dataArrays[0][ny][nx],0)*f0color[2]);
         }
         if (env.useF1000W){
-          imagedata.data[pixelindex+0] += (getValue(dataArrays[1][ny][nx],1)*f2color[0]);
-          imagedata.data[pixelindex+1] += (getValue(dataArrays[1][ny][nx],1)*f2color[1]);
-          imagedata.data[pixelindex+2] += (getValue(dataArrays[1][ny][nx],1)*f2color[2]);
+          imagedata.data[pixelindex+0] += (getValue(dataArrays[1][ny][nx],1)*f1color[0]);
+          imagedata.data[pixelindex+1] += (getValue(dataArrays[1][ny][nx],1)*f1color[1]);
+          imagedata.data[pixelindex+2] += (getValue(dataArrays[1][ny][nx],1)*f1color[2]);
         }
         if (env.useF1130W){
-          imagedata.data[pixelindex+0] += (getValue(dataArrays[2][ny][nx],2)*f3color[0]);
-          imagedata.data[pixelindex+1] += (getValue(dataArrays[2][ny][nx],2)*f3color[1]);
-          imagedata.data[pixelindex+2] += (getValue(dataArrays[2][ny][nx],2)*f3color[2]);
+          imagedata.data[pixelindex+0] += (getValue(dataArrays[2][ny][nx],2)*f2color[0]);
+          imagedata.data[pixelindex+1] += (getValue(dataArrays[2][ny][nx],2)*f2color[1]);
+          imagedata.data[pixelindex+2] += (getValue(dataArrays[2][ny][nx],2)*f2color[2]);
         }
         if (env.useF2100W){
-          imagedata.data[pixelindex+0] += (getValue(dataArrays[3][ny][nx],3)*f4color[0]);
-          imagedata.data[pixelindex+1] += (getValue(dataArrays[3][ny][nx],3)*f4color[1]);
-          imagedata.data[pixelindex+2] += (getValue(dataArrays[3][ny][nx],3)*f4color[2]);
+          imagedata.data[pixelindex+0] += (getValue(dataArrays[3][ny][nx],3)*f3color[0]);
+          imagedata.data[pixelindex+1] += (getValue(dataArrays[3][ny][nx],3)*f3color[1]);
+          imagedata.data[pixelindex+2] += (getValue(dataArrays[3][ny][nx],3)*f3color[2]);
         }
       }
       else {
@@ -502,66 +508,46 @@ window.addEventListener('resize', function(event){
   draw();
 });
 
-this.dependOn = ['filter0','filter1', 'filter2', 'filter3', 'saveSettings','drawHistogram','redraw'];
-this.depend = function() {
 
-  // here's the repeated code that should be fixed
-  if (env.filter0 == true) {
-    smartdown.setVariable('filter0', false);
-    activeFilter = 0;
+// Set up dependencies on various tweakable Smartdown vars
+
+this.dependOn.useF770W = draw;
+this.dependOn.useF1000W = draw;
+this.dependOn.useF1130W = draw;
+this.dependOn.useF2100W = draw;
+
+this.dependOn.color0 = draw;
+this.dependOn.color1 = draw;
+this.dependOn.color2 = draw;
+this.dependOn.color3 = draw;
+
+this.dependOn.editFilter = () => {
+  const editFilter = env.editFilter;
+
+  if (typeof editFilter === 'number') {
+    activeFilter = editFilter;
     updateFilterVariables();
     drawHistogram();
+    smartdown.set('editFilter', false);
     smartdown.showDisclosure('filterSettings','','center,closeable,lightbox');
   }
+};
 
-  if (env.filter1 == true) {
-    smartdown.setVariable('filter1', false);
-    activeFilter = 1;
-    updateFilterVariables();
-    drawHistogram();
-    smartdown.showDisclosure('filterSettings','','center,closeable,lightbox');
-  }
-
-  if (env.filter2 == true) {
-    smartdown.setVariable('filter2', false);
-    activeFilter = 2;
-    updateFilterVariables();
-    drawHistogram();
-    smartdown.showDisclosure('filterSettings','','center,closeable,lightbox');
-  }
-
-  if (env.filter3 == true) {
-    smartdown.setVariable('filter3', false);
-    activeFilter = 3;
-    updateFilterVariables();
-    drawHistogram();
-    smartdown.showDisclosure('filterSettings','','center,closeable,lightbox');
-  }
-
-  // these events are triggered by the histogram popup
-  if (env.saveSettings == true) {
-    smartdown.setVariable('saveSettings', false);
-    saveFilterVariables();  
-  }
-
-  if (env.drawHistogram == true) {
-    smartdown.setVariable('drawHistogram', false);
-    drawHistogram();  
-  }
+window.drawHistogram = drawHistogram;
+window.saveSettings = () => {
+  saveFilterVariables();
   draw();
-  // if (env.redraw == true){
-  //   smartdown.setVariable('redraw',false);
-  //   draw();
-  // }
-}
+};
 
-
-draw()
+draw();
 
 
 
 ```
 # :::: filterSettings
+
+##### [redrawHistogram](:!redrawHistogram)
+
 # --aliceblue
 active filter: [](:!setFilter) [redraw histogram](:=redrawHistogram=true) [Save and Close](:=close=true)
 min [](:?min|number) max [](:?max|number)
@@ -582,25 +568,26 @@ You can find a list of javascript **Math** functions [here](https://www.w3school
 this.div.style.width = '100%';
 this.div.style.height = '100%';
 this.div.style.margin = 'auto';
-
+window.histogramPlayableDiv = this.div.id;
 
 smartdown.setVariable('redrawHistogram', false);
 smartdown.setVariable('close', false);
 
-
-this.dependOn = ['redrawHistogram','close'];
-this.depend = function() {
-  if (env.redrawHistogram == true) {
+this.dependOn.redrawHistogram = () => {
+  console.log('redrawHistogram', env.redrawHistogram);
+  if (env.redrawHistogram) {
     smartdown.setVariable('redrawHistogram', false);
-    smartdown.setVariable('saveSettings', true);
-    smartdown.setVariable('drawHistogram', true);
+    window.drawHistogram();
   }
-  if (env.close == true) {
+};
+
+this.dependOn.close = () => {
+  if (env.close) {
     smartdown.setVariable('close', false);
-    smartdown.setVariable('saveSettings', true);
     smartdown.hideDisclosure('filterSettings','','');
+    window.saveSettings();
   }
-}
+};
 
 ```
 # ::::
